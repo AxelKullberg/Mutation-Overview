@@ -14,9 +14,7 @@ def test():
 @app.route("/query", methods= ["POST"])
 def query():
     """Returns the data requested as a json"""
-    response = db.get_data(request.get_json()["range"],
-                           request.get_json()["intervalMs"],
-                           request.get_json()["maxDataPoints"],
+    response = db.get_data(request.get_json()["maxDataPoints"],
                            request.get_json()["targets"],
                            request.get_json()["adhocFilters"])
     return jsonify(response)
