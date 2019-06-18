@@ -26,21 +26,20 @@ class AllTestCase(db.Model):
         return [self.id, self.name]
 
 
-def get_data(maxDataPoints, targets, adhocFilters):
-    """Takes an int denoting max number of data points (maxDataPoints),
+def get_data(maxDataPoints, targets):
+    """Takes an int denoting max number of data points (maxDataPoints) and
     a json containing target data (targets), and
-    a json containg filters (adhocfilters) and
     returns the corresponding data from the database"""
 
     data = []
     for target in targets:
         if target['type'] == 'table':
-            data.append(get_table_data(maxDataPoints, target, adhocFilters))
+            data.append(get_table_data(maxDataPoints, target))
         elif target['type'] == 'timeseries':
-            data.append(get_time_series_data(maxDataPoints, target, adhocFilters))
+            data.append(get_time_series_data(maxDataPoints, target))
     return data
 
-def get_table_data(maxDataPoints, target, adhocFilters):
+def get_table_data(maxDataPoints, target):
     """Help-function for get_data. Returns data in table-format"""
     model = determineModel(target['target'])
     column_dicts = []
@@ -48,7 +47,7 @@ def get_table_data(maxDataPoints, target, adhocFilters):
         column_dicts.append({'text': field.name,
                              'type': type_interpreter(field.type)})
 
-    value_lists = query_DB(target, adhocFilters, maxDataPoints)
+    value_lists = query_DB(target['target'], maxDataPoints)
     return {
             "columns": column_dicts,
             "rows": value_lists,
@@ -79,12 +78,11 @@ def type_interpreter(type):
         return ""
 
 #Bad solution, should be rewritten to increase modularity
-def query_DB(target, adhocFilters, maxDataPoints):
-    """Takes a string (target) denoting which model to query, a json with
-    filters to filter the query by (adhocFilters) and a int denoting
+def query_DB(target, maxDataPoints):
+    """Takes a string (target) denoting which model to query and an int denoting
     the max number of data points. Returns the result of the query"""
 
-    if target['target'] == 'all_test_case':
+    if target == 'all_test_case':
         queryResult = AllTestCase.query.filter_by().limit(maxDataPoints).all()
     #fortsätt med resterande tabeller
 
@@ -95,6 +93,7 @@ def query_DB(target, adhocFilters, maxDataPoints):
 
 
 def get_metrics():
+    """Returns the name of all table models in the database"""
     tables = db.Model.metadata.tables
     tablelist = []
     for key in tables:
