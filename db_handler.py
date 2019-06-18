@@ -5,12 +5,12 @@ from sqlalchemy import event, Table
 from flask import abort
 import datetime, os
 
-#fixa till saabs nätverk istället
-if 'NAMESPACE' in os.environ and os.environ['NAMESPACE'] == 'heroku':
-    db_uri = os.environ['DATABASE_URL']
+
+if 'NAMESPACE' in os.environ and os.environ['NAMESPACE'] == '':
+    db_uri = ""
     debug_flag = False
 else: # when running locally with sqlite
-    db_path = os.path.join(os.path.dirname(__file__), 'dextool_mutate.sqlite3')
+    db_path = os.path.join(os.path.dirname(__file__), 'database')
     db_uri = 'sqlite:///{}'.format(db_path)
     debug_flag = True
 
