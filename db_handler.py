@@ -1,6 +1,7 @@
 from server import app
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import sqltypes
+from sqlalchemy import event, Table
 from flask import abort
 import datetime, os
 
@@ -16,6 +17,15 @@ else: # when running locally with sqlite
 app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
+@event.listens_for(Table, "column_reflect")
+def remove_datetime(inspector, table, column_info):
+    """When a column is reflected and has type datetime the type is
+    changed to text. This is due to sqlite saving the datetime string and
+    sqlalchemy trying to parse it as a datetime object"""
+    if isinstance(column_info['type'], db.DateTime):
+        column_info['type'] = db.TEXT
+
 db.Model.metadata.reflect(db.engine)
 
 class AllTestCase(db.Model):
@@ -24,6 +34,53 @@ class AllTestCase(db.Model):
 
     def to_list(self):
         return [self.id, self.name]
+
+class Files(db.Model):
+    """Allows the handler to acces the files table in the db"""
+    __table__ = db.Model.metadata.tables['files']
+
+    def to_list(self):
+        return [self.id, self.path, self.checksum0, self.checksum1, self.lang]
+
+class KilledTestCase(db.Model):
+    """Allows the handler to acces the killed_test_case table in the db"""
+    __table__ = db.Model.metadata.tables['killed_test_case']
+
+    def to_list(self):
+        return [self.id, self.st_id, self.tc_id, self.location]
+
+class Mutation(db.Model):
+    """Allows the handler to acces the mutation table in the db"""
+    __table__ = db.Model.metadata.tables['mutation']
+
+    def to_list(self):
+        return [self.id, self.mp_id, self.st_id, self.kind]
+
+class MutationPoint(db.Model):
+    """Allows the handler to acces the mutation_point table in the db"""
+    __table__ = db.Model.metadata.tables['mutation_point']
+
+    def to_list(self):
+        return [self.id, self.file_id, self.offset_begin, self.offset_end,
+                self.line, self.column, self.line_end, self.column_end]
+
+class MutationStatus(db.Model):
+    """Allows the handler to acces the mutation_status table in the db"""
+    __table__ = db.Model.metadata.tables['mutation_status']
+
+    def to_list(self):
+        return [self.id, self.status, self.time, self.test_cnt, self.update_ts,
+                self.added_ts, self.checksum0, self.checksum1]
+
+
+#Empty in the googletest database, unsure if relevant
+class RawSrcMetadata(db.Model):
+    """Allows the handler to acces the raw_src_metadata table in the db"""
+    __table__ = db.Model.metadata.tables['raw_src_metadata']
+
+    def to_list(self):
+        return [self.id, self.file_id, self.line, self.nomut, self.tag,
+                self.comment]
 
 
 def get_data(maxDataPoints, targets):
@@ -77,19 +134,33 @@ def type_interpreter(type):
     else:
         return ""
 
-#Bad solution, should be rewritten to increase modularity
+
 def query_DB(target, maxDataPoints):
     """Takes a string (target) denoting which model to query and an int denoting
     the max number of data points. Returns the result of the query"""
 
     if target == 'all_test_case':
-        queryResult = AllTestCase.query.filter_by().limit(maxDataPoints).all()
-    #fortsätt med resterande tabeller
+        query_result = AllTestCase.query.limit(maxDataPoints).all()
+    elif target == 'files':
+        query_result = Files.query.limit(maxDataPoints).all()
+    elif target == 'killed_test_case':
+        query_result = KilledTestCase.query.limit(maxDataPoints).all()
+    elif target == 'mutation':
+        query_result = Mutation.query.limit(maxDataPoints).all()
+    elif target == 'mutation_point':
+        query_result = MutationPoint.query.limit(maxDataPoints).all()
+    elif target == 'mutation_status':
+        query_result = MutationStatus.query.limit(maxDataPoints).all()
+    elif target == 'raw_src_metadata':
+        query_result = RawSrcMetadata.query.limit(maxDataPoints).all()
+    #Add additional tables here
+    else:
+        query_result = []
 
-    resultList = []
-    for temp in queryResult:
-        resultList.append(temp.to_list())
-    return resultList
+    result_list = []
+    for temp in query_result:
+        result_list.append(temp.to_list())
+    return result_list
 
 
 def get_metrics():
