@@ -10,7 +10,7 @@ if 'NAMESPACE' in os.environ and os.environ['NAMESPACE'] == '':
     db_uri = ""
     debug_flag = False
 else: # when running locally with sqlite
-    db_path = os.path.join(os.path.dirname(__file__), 'database')
+    db_path = os.path.join(os.path.dirname(__file__), 'dextool_mutate.sqlite3')
     db_uri = 'sqlite:///{}'.format(db_path)
     debug_flag = True
 
@@ -33,35 +33,35 @@ class AllTestCase(db.Model):
     __table__ = db.Model.metadata.tables['all_test_case']
 
     def to_list(self):
-        return [self.id, self.name]
+        return [self.name]
 
 class Files(db.Model):
     """Allows the handler to acces the files table in the db"""
     __table__ = db.Model.metadata.tables['files']
 
     def to_list(self):
-        return [self.id, self.path, self.checksum0, self.checksum1, self.lang]
+        return [self.path, self.checksum0, self.checksum1, self.lang]
 
 class KilledTestCase(db.Model):
     """Allows the handler to acces the killed_test_case table in the db"""
     __table__ = db.Model.metadata.tables['killed_test_case']
 
     def to_list(self):
-        return [self.id, self.st_id, self.tc_id, self.location]
+        return [self.st_id, self.tc_id, self.location]
 
 class Mutation(db.Model):
     """Allows the handler to acces the mutation table in the db"""
     __table__ = db.Model.metadata.tables['mutation']
 
     def to_list(self):
-        return [self.id, self.mp_id, self.st_id, self.kind]
+        return [self.mp_id, self.st_id, self.kind]
 
 class MutationPoint(db.Model):
     """Allows the handler to acces the mutation_point table in the db"""
     __table__ = db.Model.metadata.tables['mutation_point']
 
     def to_list(self):
-        return [self.id, self.file_id, self.offset_begin, self.offset_end,
+        return [self.file_id, self.offset_begin, self.offset_end,
                 self.line, self.column, self.line_end, self.column_end]
 
 class MutationStatus(db.Model):
@@ -69,7 +69,7 @@ class MutationStatus(db.Model):
     __table__ = db.Model.metadata.tables['mutation_status']
 
     def to_list(self):
-        return [self.id, self.status, self.time, self.test_cnt, self.update_ts,
+        return [self.status, self.time, self.test_cnt, self.update_ts,
                 self.added_ts, self.checksum0, self.checksum1]
 
 
@@ -79,7 +79,7 @@ class RawSrcMetadata(db.Model):
     __table__ = db.Model.metadata.tables['raw_src_metadata']
 
     def to_list(self):
-        return [self.id, self.file_id, self.line, self.nomut, self.tag,
+        return [self.file_id, self.line, self.nomut, self.tag,
                 self.comment]
 
 
@@ -97,12 +97,14 @@ def get_data(maxDataPoints, targets):
     return data
 
 def get_table_data(maxDataPoints, target):
-    """Help-function for get_data. Returns data in table-format"""
+    """Returns requested data in table-format
+    Called by get_data"""
     model = determineModel(target['target'])
     column_dicts = []
     for field in model.columns:
-        column_dicts.append({'text': field.name,
-                             'type': type_interpreter(field.type)})
+        if field.name != "id":
+            column_dicts.append({'text': field.name,
+                                 'type': type_interpreter(field.type)})
 
     value_lists = query_DB(target['target'], maxDataPoints)
     return {
@@ -112,8 +114,9 @@ def get_table_data(maxDataPoints, target):
            }
 
 
-def get_time_series_data(maxDataPoints, target, adhocFilters):
-    """Help-function for get_data. Returns data in timeseries-format"""
+def get_time_series_data(maxDataPoints, target):
+    """Returns requested data in timeseries-format
+    Called by get_data"""
     pass
 
 def determineModel(target):
