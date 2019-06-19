@@ -42,6 +42,10 @@ class Files(db.Model):
     def to_list(self):
         return [self.path, self.checksum0, self.checksum1, self.lang]
 
+    def to_dict(self):
+        return {'checksum0': self.checksum0, 'checksum1': self.checksum1,
+                'lang': self.lang}
+
 class KilledTestCase(db.Model):
     """Allows the handler to acces the killed_test_case table in the db"""
     __table__ = db.Model.metadata.tables['killed_test_case']
@@ -49,12 +53,18 @@ class KilledTestCase(db.Model):
     def to_list(self):
         return [self.st_id, self.tc_id, self.location]
 
+    def to_dict(self):
+        return {'st_id': self.st_id, 'tc_id': self.tc_id}
+
 class Mutation(db.Model):
     """Allows the handler to acces the mutation table in the db"""
     __table__ = db.Model.metadata.tables['mutation']
 
     def to_list(self):
         return [self.mp_id, self.st_id, self.kind]
+
+    def to_dict(self):
+        return {'mp_id': self.mp_id, 'st_id': self.st_id, 'kind': self.kind}
 
 class MutationPoint(db.Model):
     """Allows the handler to acces the mutation_point table in the db"""
@@ -64,6 +74,12 @@ class MutationPoint(db.Model):
         return [self.file_id, self.offset_begin, self.offset_end,
                 self.line, self.column, self.line_end, self.column_end]
 
+    def to_dict(self):
+        return {'file_id': self.file_id, 'offset_begin': self.offset_begin,
+                'offset_end': self.offset_end, 'line': self.line,
+                'column': self.column, 'line_end': self.line_end,
+                'column_end': self.column_end}
+
 class MutationStatus(db.Model):
     """Allows the handler to acces the mutation_status table in the db"""
     __table__ = db.Model.metadata.tables['mutation_status']
@@ -71,6 +87,12 @@ class MutationStatus(db.Model):
     def to_list(self):
         return [self.status, self.time, self.test_cnt, self.update_ts,
                 self.added_ts, self.checksum0, self.checksum1]
+
+    def to_dict(self):
+        return {'status': self.status, 'time': self.time,
+                'test_cnt': self.test_cnt, 'update_ts': self.update_ts,
+                'added_ts': self.added_ts, 'checksum0': self.checksum0,
+                'checksum1': self.checksum1}
 
 
 #Empty in the googletest database, unsure if relevant
@@ -81,6 +103,10 @@ class RawSrcMetadata(db.Model):
     def to_list(self):
         return [self.file_id, self.line, self.nomut, self.tag,
                 self.comment]
+
+    def to_dict(self):
+        return {'file_id': self.file_id, 'line': self.line, 'nomut': self.nomut,
+                'tag': self.tag, 'comment': self.comment}
 
 
 def get_data(maxDataPoints, targets):
@@ -99,14 +125,21 @@ def get_data(maxDataPoints, targets):
 def get_table_data(maxDataPoints, target):
     """Returns requested data in table-format
     Called by get_data"""
+
     model = determineModel(target['target'])
+
     column_dicts = []
     for field in model.columns:
         if field.name != "id":
             column_dicts.append({'text': field.name,
                                  'type': type_interpreter(field.type)})
 
-    value_lists = query_DB(target['target'], maxDataPoints)
+    query_result = query_DB(target['target'], maxDataPoints)
+
+    value_lists = []
+    for temp in query_result:
+        value_lists.append(temp.to_list())
+
     return {
             "columns": column_dicts,
             "rows": value_lists,
@@ -117,7 +150,18 @@ def get_table_data(maxDataPoints, target):
 def get_time_series_data(maxDataPoints, target):
     """Returns requested data in timeseries-format
     Called by get_data"""
-    pass
+
+    query_result = query_DB(target['target'], maxDataPoints)
+
+    value_lists = []
+    for temp in query_result:
+        dict = temp.to_dict()
+        value_lists.append([dict[target['data']['y']], dict[target['data']['x']]])
+
+    return {
+            'target': target['target'],
+            'datapoints': value_lists
+           }
 
 def determineModel(target):
     """Identifies the table-model requested and returns a list of its fields."""
@@ -160,10 +204,7 @@ def query_DB(target, maxDataPoints):
     else:
         query_result = []
 
-    result_list = []
-    for temp in query_result:
-        result_list.append(temp.to_list())
-    return result_list
+    return query_result
 
 
 def get_metrics():
