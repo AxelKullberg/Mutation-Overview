@@ -134,7 +134,7 @@ def get_table_data(maxDataPoints, target):
             column_dicts.append({'text': field.name,
                                  'type': type_interpreter(field.type)})
 
-    query_result = query_DB(target['target'], maxDataPoints)
+    query_result = query_DB(target, maxDataPoints)
 
     value_lists = []
     for temp in query_result:
@@ -151,7 +151,7 @@ def get_time_series_data(maxDataPoints, target):
     """Returns requested data in timeseries-format
     Called by get_data"""
 
-    query_result = query_DB(target['target'], maxDataPoints)
+    query_result = query_DB(target, maxDataPoints)
 
     value_lists = []
     for temp in query_result:
@@ -186,20 +186,35 @@ def query_DB(target, maxDataPoints):
     """Takes a string (target) denoting which model to query and an int denoting
     the max number of data points. Returns the result of the query"""
 
-    if target == 'all_test_case':
-        query_result = AllTestCase.query.limit(maxDataPoints).all()
-    elif target == 'files':
-        query_result = Files.query.limit(maxDataPoints).all()
-    elif target == 'killed_test_case':
-        query_result = KilledTestCase.query.limit(maxDataPoints).all()
-    elif target == 'mutation':
-        query_result = Mutation.query.limit(maxDataPoints).all()
-    elif target == 'mutation_point':
-        query_result = MutationPoint.query.limit(maxDataPoints).all()
-    elif target == 'mutation_status':
-        query_result = MutationStatus.query.limit(maxDataPoints).all()
-    elif target == 'raw_src_metadata':
-        query_result = RawSrcMetadata.query.limit(maxDataPoints).all()
+    if 'maxDataPoints' in target['data'] and target['data']['maxDataPoints'] <= 607:
+        maxDataPoints = target['data']['maxDataPoints']
+
+    if 'firstDataPoint' in target['data']:
+        firstDataPoint = target['data']['firstDataPoint']
+    else:
+        firstDataPoint = 0
+
+    if target['target'] == 'all_test_case':
+        query_result = AllTestCase.query.filter(AllTestCase.id>=firstDataPoint). \
+            limit(maxDataPoints).all()
+    elif target['target'] == 'files':
+        query_result = Files.query.filter(Files.id>=firstDataPoint). \
+            limit(maxDataPoints).all()
+    elif target['target'] == 'killed_test_case':
+        query_result = KilledTestCase.query.filter(KilledTestCase.id>=firstDataPoint). \
+            limit(maxDataPoints).all()
+    elif target['target'] == 'mutation':
+        query_result = Mutation.query.filter(Mutation.id>=firstDataPoint). \
+            limit(maxDataPoints).all()
+    elif target['target'] == 'mutation_point':
+        query_result = MutationPoint.query.filter(MutationPoint.id>=firstDataPoint). \
+            limit(maxDataPoints).all()
+    elif target['target'] == 'mutation_status':
+        query_result = MutationStatus.query.filter(MutationStatus.id>=firstDataPoint). \
+            limit(maxDataPoints).all()
+    elif target['target'] == 'raw_src_metadata':
+        query_result = RawSrcMetadata.query.filter(RawSrcMetadata.id>=firstDataPoint). \
+            limit(maxDataPoints).all()
     #Add additional tables here
     else:
         query_result = []
