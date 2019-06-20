@@ -3,7 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import sqltypes
 from sqlalchemy import event, Table
 from flask import abort
-import datetime, os
+from datetime import datetime
+import os
 
 
 if 'NAMESPACE' in os.environ and os.environ['NAMESPACE'] == '':
@@ -85,14 +86,19 @@ class MutationStatus(db.Model):
     __table__ = db.Model.metadata.tables['mutation_status']
 
     def to_list(self):
-        return [self.status, self.time, self.test_cnt, self.update_ts,
-                self.added_ts, self.checksum0, self.checksum1]
+        return [self.status, self.time, self.test_cnt,
+                datetime.strptime(self.update_ts, '%Y-%m-%dT%H:%M:%S.%f'),
+                datetime.strptime(self.added_ts, '%Y-%m-%dT%H:%M:%S.%f'),
+                self.checksum0, self.checksum1]
 
     def to_dict(self):
         return {'status': self.status, 'time': self.time,
-                'test_cnt': self.test_cnt, 'update_ts': self.update_ts,
-                'added_ts': self.added_ts, 'checksum0': self.checksum0,
-                'checksum1': self.checksum1}
+                'test_cnt': self.test_cnt,
+                'update_ts': datetime. \
+                    strptime(self.update_ts, '%Y-%m-%dT%H:%M:%S.%f').timestamp()*1000,
+                'added_ts': datetime. \
+                    strptime(self.added_ts, '%Y-%m-%dT%H:%M:%S.%f').timestamp()*1000,
+                'checksum0': self.checksum0, 'checksum1': self.checksum1}
 
 
 #Empty in the googletest database, unsure if relevant
@@ -186,13 +192,15 @@ def query_DB(target, maxDataPoints):
     """Takes a string (target) denoting which model to query and an int denoting
     the max number of data points. Returns the result of the query"""
 
-    if 'maxDataPoints' in target['data'] and target['data']['maxDataPoints'] <= 607:
+    if target['data'] != None and 'maxDataPoints' in target['data'] and \
+            target['data']['maxDataPoints'] <= 607:
         maxDataPoints = target['data']['maxDataPoints']
 
-    if 'firstDataPoint' in target['data']:
+    if target['data'] != None and 'firstDataPoint' in target['data']:
         firstDataPoint = target['data']['firstDataPoint']
     else:
         firstDataPoint = 0
+
 
     if target['target'] == 'all_test_case':
         query_result = AllTestCase.query.filter(AllTestCase.id>=firstDataPoint). \
