@@ -32,6 +32,8 @@ db.Model.metadata.reflect(db.engine)
 class AllTestCase(db.Model):
     """Allows the handler to acces the all_test_case table in the db"""
     __table__ = db.Model.metadata.tables['all_test_case']
+    killed_test_case = db.relationship('KilledTestCase',
+                                        backref='all_test_case', lazy=True)
 
     def to_list(self):
         return [self.name]
@@ -39,6 +41,8 @@ class AllTestCase(db.Model):
 class Files(db.Model):
     """Allows the handler to acces the files table in the db"""
     __table__ = db.Model.metadata.tables['files']
+    mutation_point = db.relationship('MutationPoint', backref='files', lazy=True)
+    raw_src_metadata = db.relationship('RawSrcMetadata', backref='files', lazy=True)
 
     def to_list(self):
         return [self.path, self.checksum0, self.checksum1, self.lang]
@@ -70,6 +74,7 @@ class Mutation(db.Model):
 class MutationPoint(db.Model):
     """Allows the handler to acces the mutation_point table in the db"""
     __table__ = db.Model.metadata.tables['mutation_point']
+    mutation = db.relationship('Mutation', backref='mutation_point', lazy=True)
 
     def to_list(self):
         return [self.file_id, self.offset_begin, self.offset_end,
@@ -84,6 +89,9 @@ class MutationPoint(db.Model):
 class MutationStatus(db.Model):
     """Allows the handler to acces the mutation_status table in the db"""
     __table__ = db.Model.metadata.tables['mutation_status']
+    mutation = db.relationship('Mutation', backref='mutation_status', lazy=True)
+    killed_test_case = db.relationship('KilledTestCase',
+                                        backref='mutation_status', lazy=True)
 
     def to_list(self):
         return [self.status, self.time, self.test_cnt,
