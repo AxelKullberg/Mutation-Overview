@@ -235,5 +235,6 @@ def get_metrics():
     tables = db.Model.metadata.tables
     tablelist = []
     for key in tables:
-        tablelist.append(key)
+        if key != 'schema_version':
+            tablelist.append(key)
     return tablelist
