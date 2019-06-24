@@ -25,8 +25,3 @@ def search():
 @app.route("/annotations", methods= ["POST"])
 def annotations():
     return 200
-
-@app.route("/init")
-def init():
-    db.init_db()
-    return jsonify(200)
