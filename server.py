@@ -1,9 +1,6 @@
-from flask import Flask, request, jsonify, json, abort
-from random import randint
-import werkzeug, traceback
-
-app = Flask(__name__)
-import db_handler as db
+from flask import Flask, request, jsonify, json
+import werkzeug
+import json_handler as db
 
 @app.route("/")
 def test():
